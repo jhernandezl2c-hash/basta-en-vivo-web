@@ -4,7 +4,23 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Crown, Loader2, Play, Trophy } from 'lucide-react';
 
-const CATEGORIES = ['Nombre', 'País', 'Animal', 'Cosa', 'Color', 'Comida'];
+const CATEGORIES = ['Nombre',
+  'Apellido',
+  'País',
+  'Ciudad',
+  'Animal',
+  'Color',
+  'Comida',
+  'Marca',
+  'Profesión',
+  'Película',
+  'Serie',
+  'Canción',
+  'Famoso',
+  'Deporte',
+  'Objeto/Cosa',
+  'Fruta',
+  'Verdura',];
 
 type Response = {
   id: number;
