@@ -3,7 +3,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Loader2, Send, Timer } from 'lucide-react';
 
-const CATEGORIES = ['Nombre', 'País', 'Animal', 'Cosa', 'Color', 'Comida'];
+const CATEGORIES = ['Nombre',
+  'Apellido',
+  'País',
+  'Ciudad',
+  'Animal',
+  'Color',
+  'Comida',
+  'Marca',
+  'Profesión',
+  'Película',
+  'Serie',
+  'Canción',
+  'Famoso',
+  'Deporte',
+  'Objeto/Cosa',
+  'Fruta',
+  'Verdura',];
 
 type Round = {
   id: number;
