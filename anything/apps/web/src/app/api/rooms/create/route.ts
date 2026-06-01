@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       code = generateRoomCode();
       const inserted = await sql`
         INSERT INTO rooms (code, host_id, status, timer_duration)
-        VALUES (${code}, ${hostId}, 'waiting', 60)
+        VALUES (${code}, ${hostId}, 'waiting', 150)
         ON CONFLICT (code) DO NOTHING
         RETURNING id
       `;
