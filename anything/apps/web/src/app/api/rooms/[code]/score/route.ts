@@ -1,6 +1,16 @@
 import sql from '@/app/api/utils/sql';
 import { CATEGORIES, normalizeWord, startsWithLetter } from '@/app/api/utils/game';
 
+const INVALID_BY_CATEGORY: Record<string, string[]> = {
+  Animal: ['juarez'],
+};
+
+function isValidForCategory(category: string, value: string) {
+  const norm = normalizeWord(value);
+  const invalid = INVALID_BY_CATEGORY[category] ?? [];
+  return !invalid.includes(norm);
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code: rawCode } = await params;
@@ -12,10 +22,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     const rooms = await sql`
       SELECT id, host_id, current_letter FROM rooms WHERE code = ${code} LIMIT 1
     `;
+
     if (rooms.length === 0) {
       return Response.json({ error: 'Sala no encontrada' }, { status: 404 });
     }
+
     const room = rooms[0];
+
     if (room.host_id !== playerId) {
       return Response.json(
         { error: 'Solo el anfitrión puede calificar la ronda' },
@@ -27,63 +40,73 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       SELECT id, letter, status FROM rounds
       WHERE id = ${roundId} AND room_id = ${room.id} LIMIT 1
     `;
+
     if (rounds.length === 0) {
       return Response.json({ error: 'Ronda no encontrada' }, { status: 404 });
     }
+
     const round = rounds[0];
+
     if (round.status === 'scored') {
       return Response.json({ ok: true, alreadyScored: true });
     }
 
     const letter: string = round.letter;
 
-    // Fetch all responses for this round
     const responses = await sql`
       SELECT id, player_id, category, value FROM responses
       WHERE round_id = ${roundId}
     `;
 
-    // Score each response per category
     const updates = [];
     const playerDeltas = new Map<string, number>();
 
     for (const cat of CATEGORIES) {
       const inCat = responses.filter((r: { category: string }) => r.category === cat);
-      // Group normalized values
+
       const counts = new Map<string, number>();
+
       for (const r of inCat) {
-        const norm = normalizeWord(r.value);
+        const value = r.value ?? '';
+        const norm = normalizeWord(value);
+
         if (!norm) continue;
-        if (!startsWithLetter(r.value ?? '', letter)) continue;
+        if (!startsWithLetter(value, letter)) continue;
+        if (!isValidForCategory(cat, value)) continue;
+
         counts.set(norm, (counts.get(norm) ?? 0) + 1);
       }
 
       for (const r of inCat) {
+        const value = r.value ?? '';
+        const norm = normalizeWord(value);
         let points = 0;
-        const norm = normalizeWord(r.value);
-        if (norm && startsWithLetter(r.value ?? '', letter)) {
+
+        if (norm && startsWithLetter(value, letter) && isValidForCategory(cat, value)) {
           const c = counts.get(norm) ?? 0;
           points = c === 1 ? 10 : 5;
         }
+
         updates.push(sql`UPDATE responses SET points = ${points} WHERE id = ${r.id}`);
         playerDeltas.set(r.player_id, (playerDeltas.get(r.player_id) ?? 0) + points);
       }
     }
 
-    // Apply response points
     if (updates.length > 0) {
       await sql.transaction(updates);
     }
 
-    // Apply player score deltas
     const playerUpdates = [];
+
     for (const [pid, delta] of playerDeltas.entries()) {
       playerUpdates.push(sql`UPDATE players SET score = score + ${delta} WHERE id = ${pid}`);
     }
+
     playerUpdates.push(sql`UPDATE rounds SET status = 'scored' WHERE id = ${roundId}`);
     playerUpdates.push(
       sql`UPDATE rooms SET status = 'waiting', current_letter = NULL WHERE id = ${room.id}`
     );
+
     await sql.transaction(playerUpdates);
 
     return Response.json({ ok: true });
