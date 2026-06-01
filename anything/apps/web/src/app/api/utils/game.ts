@@ -1,4 +1,22 @@
-export const CATEGORIES = ['Nombre', 'País', 'Animal', 'Cosa', 'Color', 'Comida'] as const;
+export const CATEGORIES = [
+  'Nombre',
+  'Apellido',
+  'País',
+  'Ciudad',
+  'Animal',
+  'Color',
+  'Comida',
+  'Marca',
+  'Profesión',
+  'Película',
+  'Serie',
+  'Canción',
+  'Famoso',
+  'Deporte',
+  'Objeto/Cosa',
+  'Fruta',
+  'Verdura',
+] as const;
 
 export const LETTERS = 'ABCDEFGHIJLMNOPRSTUV'.split('');
 
